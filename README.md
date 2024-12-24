@@ -55,8 +55,6 @@ docker run -d \
 
 ---
 
----
-
 ## 폰트 설정
 
 - Noto Sans, IBM Plex, Pretendard 등 다양한 폰트가 설치되어 있으며, `matplotlibrc` 기본 설정에 의해 시각화 시 한글 깨짐 없이 사용할 수 있습니다.
