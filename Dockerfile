@@ -1,42 +1,85 @@
 # syntax=docker/dockerfile:1
-ARG CODE_SERVER_VERSION=4.97.2-bookworm
-FROM ghcr.io/coder/code-server:${CODE_SERVER_VERSION}
 
+###############################
+# Build Base Image
+###############################
+FROM nvidia/cuda:12.8.0-cudnn-runtime-ubuntu24.04
+
+###############################
+# Root Settings & Initial Setup
+###############################
 USER root
+ENV CODE_SERVER_VERSION=4.97.2 \
+    TZ="Asia/Seoul" \
+    DEBIAN_FRONTEND=noninteractive \
+    PNPM_HOME="/pnpm" \
+    PATH="$PNPM_HOME:$PATH" \
+    USER=code \
+    UID=1001 \
+    GID=1001
 
-ENV TZ='Asia/Seoul'
-
+# Copy custom permission fix script and set execution permission
 COPY fix-permissions /usr/local/bin/fix-permissions
+RUN chmod +x /usr/local/bin/fix-permissions
 
-RUN apt-get update --yes \
-    && apt-get install --yes --no-install-recommends \
-        python3 \
-        python3-dev \
-        python3-pip \
-        python3-venv \
-        fonts-dejavu gfortran \
-        g++ gcc jq libpq-dev locales fontconfig \
-        unzip build-essential \
-    && rm -rf /var/lib/apt/lists/*
+# Create group and user
+RUN groupadd --gid ${GID} ${USER} \
+    && useradd --uid ${UID} --gid ${GID} --create-home --shell /bin/bash ${USER}
 
-RUN python3 -m venv /home/coder/venv \
-    && chown -R 1000:1000 /home/coder/venv
+###############################
+# Install System Dependencies
+###############################
+RUN apt-get update -y && \
+    apt-get install -y --no-install-recommends \
+         fonts-dejavu \
+         gfortran \
+         g++ \
+         gcc \
+         jq \
+         libpq-dev \
+         locales \
+         fontconfig \
+         unzip \
+         build-essential \
+         wget \
+         tar \
+         curl && \
+    rm -rf /var/lib/apt/lists/*
 
-# Define version variables
+###############################
+# Additional Build Arguments
+###############################
 ARG D2CODING_VERSION=1.3.2
 ARG D2CODING_NERD_VERSION=1.3.2
 ARG D2CODING_DATE=20180524
 ARG PRETENDARD_VERSION=1.3.9
 ARG MECAB_RELEASE=release-0.999
 
+###############################
+# Install Code-Server
+###############################
+RUN dpkgArch="$(dpkg --print-architecture)" && \
+    case "${dpkgArch}" in \
+        amd64) codeServerUrl="https://github.com/coder/code-server/releases/download/v${CODE_SERVER_VERSION}/code-server-${CODE_SERVER_VERSION}-linux-amd64.tar.gz" ;; \
+        arm64) codeServerUrl="https://github.com/coder/code-server/releases/download/v${CODE_SERVER_VERSION}/code-server-${CODE_SERVER_VERSION}-linux-arm64.tar.gz" ;; \
+        *) echo >&2 "Unsupported architecture: ${dpkgArch}" && exit 1 ;; \
+    esac && \
+    mkdir -p /usr/lib/code-server && \
+    wget --quiet "${codeServerUrl}" -O - | tar -xzvf - -C /usr/lib/code-server --strip-components=1 && \
+    ln -sf /usr/lib/code-server/bin/code-server /usr/bin/code-server && \
+    chmod +x /usr/bin/code-server
+
+###############################
+# Install Fonts & MeCab Korean Support
+###############################
 RUN set -eux; \
     install_google_font() { \
-        RELATIVE_PATH=$1; FONT_NAME=$2; \
-        FONT_DIR="/usr/share/fonts/truetype/${RELATIVE_PATH}"; \
-        mkdir -p "${FONT_DIR}" && \
-        ENCODED_FONT_NAME=$(printf "%s" "${FONT_NAME}" | jq -sRr @uri) && \
-        wget --quiet -O "${FONT_DIR}/${FONT_NAME}" "https://raw.githubusercontent.com/google/fonts/17216f1645a133dbbeaa506f0f63f701861b6c7b/ofl/${RELATIVE_PATH}/${ENCODED_FONT_NAME}"; \
-    } && \
+        local relative_path="$1"; local font_name="$2"; \
+        local font_dir="/usr/share/fonts/truetype/${relative_path}"; \
+        mkdir -p "${font_dir}" && \
+        local encoded_font_name=$(printf "%s" "${font_name}" | jq -sRr @uri); \
+        wget --quiet -O "${font_dir}/${font_name}" "https://raw.githubusercontent.com/google/fonts/17216f1645a133dbbeaa506f0f63f701861b6c7b/ofl/${relative_path}/${encoded_font_name}"; \
+    }; \
     \
     # Install D2Coding font
     mkdir -p /usr/share/fonts/truetype/D2Coding && \
@@ -48,13 +91,11 @@ RUN set -eux; \
     mkdir -p /usr/share/fonts/truetype/D2CodingNerd && \
     wget --quiet -O /usr/share/fonts/truetype/D2CodingNerd/D2CodingNerd.ttf "https://github.com/kelvinks/D2Coding_Nerd/raw/master/D2Coding%20v.${D2CODING_NERD_VERSION}%20Nerd%20Font%20Complete.ttf" && \
     \
-    # Install Pretendard font
+    # Install Pretendard & PretendardJP fonts
     mkdir -p /usr/share/fonts/truetype/Pretendard && \
     wget --quiet -O /usr/share/fonts/truetype/Pretendard.zip "https://github.com/orioncactus/pretendard/releases/download/v${PRETENDARD_VERSION}/Pretendard-${PRETENDARD_VERSION}.zip" && \
     unzip /usr/share/fonts/truetype/Pretendard.zip -d /usr/share/fonts/truetype/Pretendard/ && \
     rm /usr/share/fonts/truetype/Pretendard.zip && \
-    \
-    # Install PretendardJP font
     mkdir -p /usr/share/fonts/truetype/PretendardJP && \
     wget --quiet -O /usr/share/fonts/truetype/PretendardJP.zip "https://github.com/orioncactus/pretendard/releases/download/v${PRETENDARD_VERSION}/PretendardJP-${PRETENDARD_VERSION}.zip" && \
     unzip /usr/share/fonts/truetype/PretendardJP.zip -d /usr/share/fonts/truetype/PretendardJP/ && \
@@ -112,9 +153,9 @@ RUN set -eux; \
     # Install MeCab Korean support
     dpkgArch="$(dpkg --print-architecture)"; \
     case "${dpkgArch##*-}" in \
-        amd64) mecabArch='x86_64';; \
-        arm64) mecabArch='aarch64';; \
-        *) echo >&2 "unsupported architecture: ${dpkgArch}"; exit 1 ;; \
+        amd64) mecabArch='x86_64' ;; \
+        arm64) mecabArch='aarch64' ;; \
+        *) echo >&2 "Unsupported architecture: ${dpkgArch}" && exit 1 ;; \
     esac; \
     mecabKoUrl="https://github.com/Pusnow/mecab-ko-msvc/releases/download/${MECAB_RELEASE}/mecab-ko-linux-${mecabArch}.tar.gz"; \
     mecabKoDicUrl="https://github.com/Pusnow/mecab-ko-msvc/releases/download/${MECAB_RELEASE}/mecab-ko-dic.tar.gz"; \
@@ -122,45 +163,66 @@ RUN set -eux; \
     wget --quiet "${mecabKoDicUrl}" -O - | tar -xzvf - -C /opt/mecab/share; \
     fix-permissions "/opt/mecab"
 
-USER 1000
+###############################
+# Switch to Non-root User & Python Setup
+###############################
+SHELL ["/bin/bash", "-c"]
+USER ${UID}
+ENV PATH="/home/code/.local/bin:$PATH"
 
-RUN . /home/coder/venv/bin/activate \
-    && pip install --upgrade pip \
-    && pip install --no-cache-dir \
-            'grpcio-status' 'grpcio' 'pandas==2.2.3' 'pyarrow' \
-            'transformers' 'datasets' 'tokenizers' 'nltk' 'jax' 'jaxlib' 'optax' \
-            'pandas-datareader' 'psycopg2' 'pymysql' 'pymongo' 'sqlalchemy' \
-            'sentencepiece' 'seqeval' 'wordcloud' 'tweepy' 'gradio' \
-            'dash' 'streamlit' 'tensorflow' \
-            'line-profiler' 'memory-profiler' \
-            'konlpy' 'dart-fss' 'opendartreader' 'finance-datareader' \
-            'elasticsearch' 'elasticsearch-dsl' 'sentence-transformers' \
-    && pip install --no-cache-dir --index-url 'https://download.pytorch.org/whl/cpu' \
-            'torch' 'torchaudio' 'torchvision' \
-    && pip install --no-cache-dir \
-            'jupyterlab' 'jupyterlab_rise' 'thefuzz' 'ipympl' \
-            'jupyterlab-latex' 'jupyterlab-katex' 'ipydatagrid' \
-            'jupyterlab-language-pack-ko-KR' 'sas_kernel' \
-    && mkdir -p /home/${USER}/.config/matplotlib/ && \
+WORKDIR /home/code/
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
+    uv python install 3.12.9 --default --preview && \
+    uv tool update-shell && \
+    uv init project --python 3.12.9 --bare && \
+    uv venv --python 3.12.9
+
+WORKDIR /home/code/project/
+RUN uv add \
+         grpcio-status grpcio pandas==2.2.3 pyarrow \
+         transformers datasets tokenizers nltk jax jaxlib optax \
+         pandas-datareader psycopg2 pymysql pymongo sqlalchemy \
+         sentencepiece seqeval wordcloud tweepy gradio \
+         dash streamlit tensorflow \
+         line-profiler memory-profiler \
+         konlpy dart-fss opendartreader finance-datareader \
+         elasticsearch elasticsearch-dsl \
+         "nvidia-cudnn-cu12>=9.5.0.50" \
+         ipykernel \
+         jupyterlab jupyterlab_rise thefuzz ipympl \
+         jupyterlab-latex jupyterlab-katex ipydatagrid \
+         jupyterlab-language-pack-ko-KR sas_kernel && \
+    mkdir -p /home/code/project/.config/matplotlib/ && \
     { \
-        echo "# Default font family"; \
-        echo "font.family: \"Pretendard\""; \
-        echo ""; \
-        echo "# Sans-serif fonts"; \
-        echo "font.sans-serif: \"Pretendard Variable\", Pretendard, \"Pretendard JP Variable\", \"Pretendard JP\", \"Noto Sans KR\", \"Noto Sans JP\", \"IBM Plex Sans KR\", \"IBM Plex Sans\", \"DejaVu Sans\", \"Liberation Sans\", \"Nimbus Sans\", \"Ubuntu\""; \
-        echo ""; \
-        echo "# Serif fonts"; \
-        echo "font.serif: \"Noto Serif KR\", \"Noto Serif JP\", \"IBM Plex Serif\", \"STIXGeneral\", \"Liberation Serif\", \"DejaVu Serif\", \"Nimbus Roman\""; \
-        echo ""; \
-        echo "# Monospace fonts"; \
-        echo "font.monospace: \"D2Coding\", \"Noto Sans Mono\", \"IBM Plex Mono\", \"Noto Sans JP\", \"DejaVu Sans Mono\", \"Liberation Mono\", \"Source Code Pro\", \"Ubuntu Mono\""; \
-        echo ""; \
-        echo "# Cursive fonts"; \
-        echo "font.cursive: \"Nanum Brush Script\", \"Noto Serif KR\", \"Noto Serif JP\", \"IBM Plex Serif\", \"Liberation Serif\", \"Nimbus Roman\", cursive"; \
-        echo ""; \
-        echo "# Fantasy fonts"; \
-        echo "font.fantasy: \"Noto Sans KR\", \"Noto Sans JP\", \"IBM Plex Sans\", \"Nimbus Sans\", fantasy"; \
-    } > /home/${USER}/.config/matplotlib/matplotlibrc
+         echo "# Default font family"; \
+         echo "font.family: \"Pretendard\""; \
+         echo ""; \
+         echo "# Sans-serif fonts"; \
+         echo "font.sans-serif: \"Pretendard Variable\", Pretendard, \"Pretendard JP Variable\", \"Pretendard JP\", \"Noto Sans KR\", \"Noto Sans JP\", \"IBM Plex Sans KR\", \"IBM Plex Sans\", \"DejaVu Sans\", \"Liberation Sans\", \"Nimbus Sans\", \"Ubuntu\""; \
+         echo ""; \
+         echo "# Serif fonts"; \
+         echo "font.serif: \"Noto Serif KR\", \"Noto Serif JP\", \"IBM Plex Serif\", \"STIXGeneral\", \"Liberation Serif\", \"DejaVu Serif\", \"Nimbus Roman\""; \
+         echo ""; \
+         echo "# Monospace fonts"; \
+         echo "font.monospace: \"D2Coding\", \"Noto Sans Mono\", \"IBM Plex Mono\", \"Noto Sans JP\", \"DejaVu Sans Mono\", \"Liberation Mono\", \"Source Code Pro\", \"Ubuntu Mono\""; \
+         echo ""; \
+         echo "# Cursive fonts"; \
+         echo "font.cursive: \"Nanum Brush Script\", \"Noto Serif KR\", \"Noto Serif JP\", \"IBM Plex Serif\", \"Liberation Serif\", \"Nimbus Roman\", cursive"; \
+         echo ""; \
+         echo "# Fantasy fonts"; \
+         echo "font.fantasy: \"Noto Sans KR\", \"Noto Sans JP\", \"IBM Plex Sans\", \"Nimbus Sans\", fantasy"; \
+    } > /home/code/project/.config/matplotlib/matplotlibrc && \
+    mkdir -p /home/code/.local/share/code-server/User/ && \
+    { \
+       echo "{\"workbench.colorTheme\": \"Visual Studio Dark\"}"; \
+    } > /home/code/.local/share/code-server/User/settings.json && \
+    uv cache clean
 
-RUN code-server --install-extension ms-python.python \
-    && code-server --install-extension ms-toolsai.jupyter
+###############################
+# Install VS Code Extensions & Final Settings
+###############################
+RUN code-server --install-extension ms-python.python && \
+    code-server --install-extension ms-toolsai.jupyter
+
+VOLUME [ "/home/code/" ]
+CMD ["code-server", "--bind-addr", "0.0.0.0:8080", "."]
