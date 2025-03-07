@@ -31,6 +31,7 @@ RUN groupadd --gid ${GID} ${USER} \
 ###############################
 RUN apt-get update -y && \
     apt-get install -y --no-install-recommends \
+         ffmpeg \
          fonts-dejavu \
          gfortran \
          g++ \
