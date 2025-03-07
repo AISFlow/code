@@ -42,15 +42,16 @@ RUN touch "${BASH_ENV}" && echo '. "${BASH_ENV}"' >> ~/.bashrc
 RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.2/install.sh | PROFILE="${BASH_ENV}" bash
 RUN echo node > .nvmrc
 RUN nvm install 20
-RUN npm install -g pnpm@latest-10
+RUN npm install -g pnpm@latest-10 \
+    && npm cache clean --force
 
 ENV PNPM_HOME="~/.pnpm/store"
 ENV PATH="$PNPM_HOME:/home/${USER}/.local/bin:$PATH"
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
     uv python install 3.12.9 --default --preview && \
     uv tool update-shell && \
-    curl -fsSL https://code-server.dev/install.sh | sh
-
+    curl -fsSL https://code-server.dev/install.sh | sh && \
+    rm -rf /home/${USER}/.cache/code-server
 
 # ─────────────────────────────
 # Stage: MeCab Setup
@@ -176,10 +177,9 @@ COPY --from=mecab /opt/mecab /opt/mecab
 USER ${UID}
 
 # Install uv and configure the Python environment
-RUN uv init project --python 3.12.9 --bare && \
-    uv venv --python 3.12.9
+RUN uv init --python 3.12.9 --bare && \
+    uv venv --python 3.12.9 --seed
 
-WORKDIR /home/code/project/
 RUN uv add \
          grpcio-status grpcio pandas==2.2.3 pyarrow \
          transformers datasets tokenizers nltk jax jaxlib optax \
@@ -194,7 +194,7 @@ RUN uv add \
          jupyterlab jupyterlab_rise thefuzz ipympl \
          jupyterlab-latex jupyterlab-katex ipydatagrid \
          jupyterlab-language-pack-ko-KR sas_kernel && \
-    mkdir -p /home/code/project/.config/matplotlib/ && \
+    mkdir -p /home/code/.config/matplotlib/ && \
     { \
          echo "# Default font family"; \
          echo "font.family: \"Pretendard\""; \
@@ -213,10 +213,11 @@ RUN uv add \
          echo ""; \
          echo "# Fantasy fonts"; \
          echo "font.fantasy: \"Noto Sans KR\", \"Noto Sans JP\", \"IBM Plex Sans\", \"Nimbus Sans\", fantasy"; \
-    } > /home/code/project/.config/matplotlib/matplotlibrc && \
+    } > /home/code/.config/matplotlib/matplotlibrc && \
     mkdir -p /home/code/.local/share/code-server/User/ && \
     echo "{\"workbench.colorTheme\": \"Visual Studio Dark\"}" > /home/code/.local/share/code-server/User/settings.json && \
-    uv cache clean
+    uv cache clean && \
+    uv sync --compile-bytecode
 
 # Install VS Code extensions
 RUN code-server --install-extension ms-python.python && \
@@ -226,14 +227,12 @@ RUN code-server --install-extension ms-python.python && \
 # Stage: Runtime Stage
 # ─────────────────────────────
 FROM base AS runtime
-
+ENV NODE_ENV=production
 # Copy files from the builder stage
-COPY --from=builder /opt/mecab /opt/mecab
-COPY --from=builder /home/code /home/code
-COPY --from=builder /usr/local/bin/fix-permissions /usr/local/bin/fix-permissions
-COPY --from=fonts /usr/share/fonts /usr/share/fonts
-
-WORKDIR /home/code/
+COPY --link --from=builder /opt/mecab /opt/mecab
+COPY --link --from=builder /home/code /home/code
+COPY --link --from=builder /usr/local/bin/fix-permissions /usr/local/bin/fix-permissions
+COPY --link --from=fonts /usr/share/fonts /usr/share/fonts
 
 # Expose the Code‑Server port and define a volume for persistent data
 EXPOSE 8080
