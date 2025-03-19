@@ -23,12 +23,11 @@ RUN rm -rf /etc/apt/sources.list.d/cuda.list && \
         libsecret-1-dev libkrb5-dev \
         locales dumb-init procps \
         git git-lfs htop lsb-release \
-        zip unzip \
-        man-db openssh-client sudo nano \
-        vim-tiny zsh jq python-is-python3 \
-        texlive-full \
+        zip unzip openssh-client sudo nano \
+        vim zsh jq python-is-python3 \
         texlive-xetex texlive-fonts-recommended \
-        texlive-plain-generic ko.tex fonts-noto-cjk-extra && \
+        ko.tex fonts-noto-cjk texlive-lang-korean \
+        texlive-lang-chinese texlive-lang-japanese && \
     curl https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb \
     --output cuda-keyring_1.1-1_all.deb && \
         apt-key del A4B469963BF863CC && \
