@@ -49,7 +49,7 @@ setup_user() {
     # Ensure the home directory exists and set its ownership
     echo -e "${GREEN}Setting ownership of home directory for $uname...${NC}"
     mkdir -p "/home/$uname"
-    fix-permissions "/home/$uname"
+    # fix-permissions "/home/$uname"
     echo -e "${GREEN}Ownership set successfully for $uname!${NC}"
 }
 
