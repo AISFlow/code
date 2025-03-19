@@ -8,6 +8,7 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 # Set localisation, non-interactive mode, and other environment variables
 ENV TZ="Asia/Seoul" \
     LANG=ko_KR.UTF-8 \
+    LC_ALL=ko_KR.UTF-8 \
     DEBIAN_FRONTEND=noninteractive \
     USER=code \
     UID=1001 \
@@ -28,6 +29,8 @@ RUN rm -rf /etc/apt/sources.list.d/cuda.list && \
         texlive-xetex texlive-fonts-recommended \
         ko.tex fonts-noto-cjk texlive-lang-korean \
         texlive-lang-chinese texlive-lang-japanese && \
+    echo "ko_KR.UTF-8 UTF-8" >> /etc/locale.gen && \
+    locale-gen && \
     curl https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb \
     --output cuda-keyring_1.1-1_all.deb && \
         apt-key del A4B469963BF863CC && \
