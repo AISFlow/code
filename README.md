@@ -4,24 +4,28 @@
 
 ## 주요 기능/구성
 
-1. **Base Image**  
+1. **Base Image**
+
    - [ghcr.io/coder/code-server:4.96.2-bookworm](https://github.com/coder/code-server)
    - code-server를 이용해 브라우저에서 VS Code 환경을 사용할 수 있도록 설정.
 
-2. **Python & Tools**  
+2. **Python & Tools**
+
    - Python 3.11(이미지 기본 또는 Bookworm 디폴트 버전) + `python3-venv`, `python3-dev` 등 설치
    - `pip`를 이용해 Data Science, NLP, Web Framework, DB 연동 등에 필요한 라이브러리 설치
    - PyTorch(CPU 버전(ARM64), CUDA(AMD64), JAX, Transformers 등 포함
 
-3. **Mecab**  
-   - `mecab-ko-msvc` 리포지토리에서 mecab-ko + mecab-ko-dic 설치  
+3. **Mecab**
+
+   - `mecab-ko-msvc` 리포지토리에서 mecab-ko + mecab-ko-dic 설치
    - 한국어 형태소 분석 가능
 
-4. **Various Fonts**  
+4. **Various Fonts**
+
    - Google Fonts, Noto Fonts, D2Coding, Pretendard, IBM Plex 등 한글, 일본어, 다국어 폰트 설치
    - Matplotlib 폰트 설정을 통해 시각화 시 한글 폰트 깨짐 방지
 
-5. **VS Code Extensions**  
+5. **VS Code Extensions**
    - `ms-python.python`, `ms-toolsai.jupyter` 확장 설치
 
 ---
