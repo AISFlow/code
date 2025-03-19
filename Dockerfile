@@ -15,13 +15,13 @@ ENV TZ="Asia/Seoul" \
 
 # Install essential commands and tools, and create group and user
 RUN rm -rf /etc/apt/sources.list.d/cuda.list && \
-    apt-get update -y && \
-    apt-get install -y --no-install-recommends \
+    apt-get update -yq && \
+    apt-get install -yq --no-install-recommends \
         build-essential g++ pkg-config wget curl \
         unzip tar ffmpeg fonts-dejavu fontconfig \
         libpq-dev libx11-dev libxkbfile-dev \
         libsecret-1-dev libkrb5-dev \
-        locales dumb-init procps \
+        locales dumb-init procps pandoc \
         git git-lfs htop lsb-release \
         zip unzip openssh-client sudo nano \
         vim zsh jq python-is-python3 \
