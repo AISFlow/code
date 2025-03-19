@@ -27,6 +27,7 @@ RUN rm -rf /etc/apt/sources.list.d/cuda.list && \
         vim zsh jq python-is-python3 \
         texlive-xetex texlive-fonts-recommended \
         ko.tex fonts-noto-cjk texlive-lang-korean \
+        texlive-plain-generic \
         texlive-lang-chinese texlive-lang-japanese && \
     curl https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb \
     --output cuda-keyring_1.1-1_all.deb && \
@@ -145,6 +146,7 @@ COPY --link --from=builder /home/code /home/code
 COPY --link --from=builder --chmod=775 /usr/local/bin/fix-permissions /usr/local/bin/fix-permissions
 COPY --link --from=aisflow/dockerised-mecab-ko:0.1.0 /opt/mecab /opt/mecab
 COPY --link --from=aisflow/dockerised-fonts:0.1.0 /fonts /usr/share/fonts/truetype
+COPY --link --from=aisflow/dockerised-fonts:0.1.0 /usr/share/fonts/truetype /usr/share/fonts/truetype
 
 # Expose the Code‑Server port and define a volume for persistent data
 EXPOSE 8080
