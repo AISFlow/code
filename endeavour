@@ -44,7 +44,7 @@ setup_user() {
     # Set ownership of the home directory
     echo -e "${GREEN}Setting ownership of home directory for ${UNAME}...${NC}"
     mkdir -p "/home/${UNAME}"
-    chown "${UID}:${GID}" "/home/${UNAME}"
+    chown -r "${UID}:${GID}" "/home/${UNAME}"
     echo -e "${GREEN}Ownership set successfully for ${UNAME}!${NC}"
 }
 
