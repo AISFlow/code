@@ -1,56 +1,61 @@
 #!/bin/bash
 set -e
 
-# Define colours
+# Define colours for output messages
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 NC='\033[0m'
 
 setup_user() {
-    UID="${UID:-1001}"
-    GID="${GID:-1001}"
-    UNAME="${USERNAME:-code}"
+    # Set default UID, GID and username if not provided
+    local uid="${UID:-1001}"
+    local gid="${GID:-1001}"
+    local uname="${USERNAME:-code}"
 
-    # Check if a group exists for the given GID
-    group=$(getent group "${GID}" | cut -d: -f1)
-    if [ -n "${group}" ]; then
-        if [ "${group}" != "${UNAME}" ]; then
-            # Rename existing group to the desired username
-            groupmod -n "${UNAME}" "${group}"
+    # Check if a group with the provided GID exists
+    local existing_group
+    existing_group=$(getent group "${gid}" | cut -d: -f1)
+
+    if [ -n "$existing_group" ]; then
+        if [ "$existing_group" != "$uname" ]; then
+            # Rename the existing group to the desired username
+            groupmod -n "$uname" "$existing_group"
         else
-            echo -e "${YELLOW}Group '${UNAME}' already exists. Skipping group creation.${NC}"
+            echo -e "${YELLOW}Group '$uname' already exists. Skipping group creation.${NC}"
         fi
     else
-        groupadd -g "${GID}" "${UNAME}"
+        groupadd -g "$gid" "$uname"
     fi
 
-    # Check if a user exists for the given UID
-    user=$(getent passwd "${UID}" | cut -d: -f1)
-    if [ -n "${user}" ]; then
-        if [ "${user}" != "${UNAME}" ]; then
-            # Rename existing user to the desired username and update home directory
-            usermod -l "${UNAME}" "${user}"
-            usermod -d "/home/${UNAME}" "${UNAME}"
-            if [ -d "/home/${user}" ]; then
-                mv "/home/${user}" "/home/${UNAME}" || { echo "Failed to rename home directory"; exit 1; }
+    # Check if a user with the provided UID exists
+    local existing_user
+    existing_user=$(getent passwd "${uid}" | cut -d: -f1)
+
+    if [ -n "$existing_user" ]; then
+        if [ "$existing_user" != "$uname" ]; then
+            # Rename the existing user and update the home directory
+            usermod -l "$uname" "$existing_user"
+            usermod -d "/home/$uname" "$uname"
+            if [ -d "/home/$existing_user" ]; then
+                mv "/home/$existing_user" "/home/$uname" || { echo "Failed to rename home directory"; exit 1; }
             else
-                echo "Home directory for ${user} does not exist"
+                echo "Home directory for $existing_user does not exist"
             fi
         fi
     else
-        useradd -u "${UID}" -g "${GID}" -m "${UNAME}"
+        useradd -u "$uid" -g "$gid" -m "$uname"
     fi
 
-    # Set ownership of the home directory
-    echo -e "${GREEN}Setting ownership of home directory for ${UNAME}...${NC}"
-    mkdir -p "/home/${UNAME}"
-    chown -r "${UID}:${GID}" "/home/${UNAME}"
-    echo -e "${GREEN}Ownership set successfully for ${UNAME}!${NC}"
+    # Ensure the home directory exists and set its ownership
+    echo -e "${GREEN}Setting ownership of home directory for $uname...${NC}"
+    mkdir -p "/home/$uname"
+    fix-permissions "/home/$uname"
+    echo -e "${GREEN}Ownership set successfully for $uname!${NC}"
 }
 
 if [ "$(id -u)" -eq 0 ]; then
-    setup_user  # Call the setup_user function
-    exec gosu "${UNAME}" /home/${UNAME}/code-server --bind-addr 0.0.0.0:8080 .
+    setup_user  # Execute the user and group setup
+    exec gosu "${USERNAME:-code}" code-server --bind-addr 0.0.0.0:8080 .
 else
-    exec "$@"  # If not root, execute the command directly
+    exec "$@"  # If not running as root, execute the provided command directly
 fi

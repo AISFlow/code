@@ -24,7 +24,7 @@ RUN rm -rf /etc/apt/sources.list.d/cuda.list && \
         locales dumb-init procps pandoc \
         git git-lfs htop lsb-release \
         zip unzip openssh-client sudo nano \
-        vim zsh jq python-is-python3 \
+        vim zsh jq python-is-python3 texlive-full \
         texlive-xetex texlive-fonts-recommended \
         ko.tex fonts-noto-cjk texlive-lang-korean \
         texlive-lang-chinese texlive-lang-japanese && \
@@ -62,6 +62,95 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
     uv tool update-shell && \
     curl -fsSL https://code-server.dev/install.sh | sh && \
     rm -rf /home/${USER}/.cache/code-server
+
+# ─────────────────────────────
+# Stage: Fonts Setup
+# ─────────────────────────────
+FROM base AS fonts
+USER root
+# Define font version arguments
+ARG D2CODING_VERSION=1.3.2
+ARG D2CODING_DATE=20180524
+ARG D2CODING_NERD_VERSION=1.3.2
+ARG PRETENDARD_VERSION=1.3.9
+
+RUN set -eux; \
+        install_google_font() { \
+        local relative_path="$1"; local font_name="$2"; \
+        local font_dir="/usr/share/fonts/truetype/${relative_path}"; \
+        mkdir -p "${font_dir}" && \
+        local encoded_font_name=$(printf "%s" "${font_name}" | jq -sRr @uri); \
+        wget --quiet -O "${font_dir}/${font_name}" "https://raw.githubusercontent.com/google/fonts/17216f1645a133dbbeaa506f0f63f701861b6c7b/ofl/${relative_path}/${encoded_font_name}"; \
+    }; \
+    \
+    # Install the D2Coding font
+    mkdir -p /usr/share/fonts/truetype/D2Coding && \
+        wget --quiet -O /usr/share/fonts/truetype/D2Coding.zip "https://github.com/naver/d2codingfont/releases/download/VER${D2CODING_VERSION}/D2Coding-Ver${D2CODING_VERSION}-${D2CODING_DATE}.zip" && \
+        unzip /usr/share/fonts/truetype/D2Coding.zip -d /usr/share/fonts/truetype/ && \
+    rm /usr/share/fonts/truetype/D2Coding.zip && \
+    \
+    # Install the D2Coding Nerd font
+    mkdir -p /usr/share/fonts/truetype/D2CodingNerd && \
+    wget --quiet -O /usr/share/fonts/truetype/D2CodingNerd/D2CodingNerd.ttf "https://github.com/kelvinks/D2Coding_Nerd/raw/master/D2Coding%20v.${D2CODING_NERD_VERSION}%20Nerd%20Font%20Complete.ttf" && \
+    \
+    # Install the Pretendard and PretendardJP fonts
+    mkdir -p /usr/share/fonts/truetype/Pretendard && \
+        wget --quiet -O /usr/share/fonts/truetype/Pretendard.zip "https://github.com/orioncactus/pretendard/releases/download/v${PRETENDARD_VERSION}/Pretendard-${PRETENDARD_VERSION}.zip" && \
+        unzip /usr/share/fonts/truetype/Pretendard.zip -d /usr/share/fonts/truetype/Pretendard/ && \
+    rm /usr/share/fonts/truetype/Pretendard.zip && \
+    mkdir -p /usr/share/fonts/truetype/PretendardJP && \
+        wget --quiet -O /usr/share/fonts/truetype/PretendardJP.zip "https://github.com/orioncactus/pretendard/releases/download/v${PRETENDARD_VERSION}/PretendardJP-${PRETENDARD_VERSION}.zip" && \
+        unzip /usr/share/fonts/truetype/PretendardJP.zip -d /usr/share/fonts/truetype/PretendardJP/ && \
+    rm /usr/share/fonts/truetype/PretendardJP.zip && \
+    \
+    # Install Noto fonts
+        install_google_font "notosans" "NotoSans[wdth,wght].ttf" && \
+        install_google_font "notosans" "NotoSans-Italic[wdth,wght].ttf" && \
+        install_google_font "notoserif" "NotoSerif[wdth,wght].ttf" && \
+        install_google_font "notoserif" "NotoSerif-Italic[wdth,wght].ttf" && \
+        install_google_font "notosanskr" "NotoSansKR[wght].ttf" && \
+        install_google_font "notoserifkr" "NotoSerifKR[wght].ttf" && \
+        install_google_font "notosansjp" "NotoSansJP[wght].ttf" && \
+        install_google_font "notoserifjp" "NotoSerifJP[wght].ttf" && \
+    \
+    # Install Nanum fonts
+        install_google_font "nanumbrushscript" "NanumBrushScript-Regular.ttf" && \
+        install_google_font "nanumgothic" "NanumGothic-Bold.ttf" && \
+        install_google_font "nanumgothic" "NanumGothic-ExtraBold.ttf" && \
+        install_google_font "nanumgothic" "NanumGothic-Regular.ttf" && \
+        install_google_font "nanumgothiccoding" "NanumGothicCoding-Bold.ttf" && \
+        install_google_font "nanumgothiccoding" "NanumGothicCoding-Regular.ttf" && \
+        install_google_font "nanummyeongjo" "NanumMyeongjo-Bold.ttf" && \
+        install_google_font "nanummyeongjo" "NanumMyeongjo-ExtraBold.ttf" && \
+        install_google_font "nanummyeongjo" "NanumMyeongjo-Regular.ttf" && \
+    \
+    # Install IBM Plex fonts
+        install_google_font "ibmplexmono" "IBMPlexMono-Bold.ttf" && \
+        install_google_font "ibmplexmono" "IBMPlexMono-BoldItalic.ttf" && \
+        install_google_font "ibmplexmono" "IBMPlexMono-ExtraLight.ttf" && \
+        install_google_font "ibmplexmono" "IBMPlexMono-ExtraLightItalic.ttf" && \
+        install_google_font "ibmplexmono" "IBMPlexMono-Italic.ttf" && \
+        install_google_font "ibmplexmono" "IBMPlexMono-Light.ttf" && \
+        install_google_font "ibmplexmono" "IBMPlexMono-LightItalic.ttf" && \
+        install_google_font "ibmplexmono" "IBMPlexMono-Medium.ttf" && \
+        install_google_font "ibmplexmono" "IBMPlexMono-MediumItalic.ttf" && \
+        install_google_font "ibmplexmono" "IBMPlexMono-Regular.ttf" && \
+        install_google_font "ibmplexmono" "IBMPlexMono-SemiBold.ttf" && \
+        install_google_font "ibmplexmono" "IBMPlexMono-SemiBoldItalic.ttf" && \
+        install_google_font "ibmplexmono" "IBMPlexMono-Thin.ttf" && \
+        install_google_font "ibmplexmono" "IBMPlexMono-ThinItalic.ttf" && \
+        install_google_font "ibmplexsanskr" "IBMPlexSansKR-Bold.ttf" && \
+        install_google_font "ibmplexsanskr" "IBMPlexSansKR-ExtraLight.ttf" && \
+        install_google_font "ibmplexsanskr" "IBMPlexSansKR-Light.ttf" && \
+        install_google_font "ibmplexsanskr" "IBMPlexSansKR-Medium.ttf" && \
+        install_google_font "ibmplexsanskr" "IBMPlexSansKR-Regular.ttf" && \
+        install_google_font "ibmplexsanskr" "IBMPlexSansKR-SemiBold.ttf" && \
+        install_google_font "ibmplexsanskr" "IBMPlexSansKR-Thin.ttf" && \
+    \
+    # Set font permissions and update the cache
+    chmod -R 644 /usr/share/fonts/truetype/* && \
+    find /usr/share/fonts/truetype/ -type d -exec chmod 755 {} + && \
+    fc-cache -f -v
 
 # ─────────────────────────────
 # Stage: Builder Stage (Integrates All Components)
@@ -115,8 +204,7 @@ RUN uv add \
     } > /home/code/.config/matplotlib/matplotlibrc && \
     mkdir -p /home/code/.local/share/code-server/User/ && \
     echo "{\"workbench.colorTheme\": \"Visual Studio Dark\"}" > /home/code/.local/share/code-server/User/settings.json && \
-    uv cache clean && \
-    uv sync --compile-bytecode
+    uv cache clean
 
 # Install VS Code extensions with retry logic
 RUN set -eux; \
@@ -144,12 +232,11 @@ ENV TINI_VERSION=v0.19.0
 ENV NODE_ENV=production
 
 # Copy files from the builder stage
-COPY --link --from=builder /home/code /home/code
-COPY --link --from=builder --chmod=775 /usr/local/bin/fix-permissions /usr/local/bin/fix-permissions
-COPY --link --from=aisflow/dockerised-mecab-ko:0.1.0 /opt/mecab /opt/mecab
-COPY --link --from=aisflow/dockerised-fonts:20250319-235039 /usr/share/fonts/truetype/ /usr/share/fonts/truetype/
-COPY --link --from=aisflow/dockerised-fonts:20250319-235039 /usr/share/fonts/polybag/ /usr/share/fonts/polybag/
-COPY --link endeavour /usr/bin/endeavour
+COPY --link --chown=1001:1001 --from=builder /home/code /home/code
+COPY --link --chown=1001:1001 --from=builder --chmod=775 /usr/local/bin/fix-permissions /usr/local/bin/fix-permissions
+COPY --link --chown=1001:1001 --from=aisflow/dockerised-mecab-ko:0.1.0 /opt/mecab /opt/mecab
+COPY --link --from=fonts /usr/share/fonts /usr/share/fonts
+COPY --link --chown=1001:1001 endeavour /usr/bin/endeavour
 
 USER root
 
