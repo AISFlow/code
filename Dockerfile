@@ -14,7 +14,8 @@ ENV TZ="Asia/Seoul" \
     GID=1001
 
 # Install essential commands and tools, and create group and user
-RUN apt-get update -y && \
+RUN rm -rf /etc/apt/sources.list.d/cuda.list && \
+    apt-get update -y && \
     apt-get install -y --no-install-recommends \
         build-essential g++ pkg-config wget curl \
         unzip tar ffmpeg fonts-dejavu fontconfig \
@@ -22,8 +23,18 @@ RUN apt-get update -y && \
         libsecret-1-dev libkrb5-dev \
         locales dumb-init procps \
         git git-lfs htop lsb-release \
+        zip unzip \
         man-db openssh-client sudo nano \
-        vim-tiny zsh jq python-is-python3 && \
+        vim-tiny zsh jq python-is-python3 \
+        texlive-full \
+        texlive-xetex texlive-fonts-recommended \
+        texlive-plain-generic ko.tex fonts-noto-cjk-extra && \
+    curl https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb \
+    --output cuda-keyring_1.1-1_all.deb && \
+        apt-key del A4B469963BF863CC && \
+            dpkg -i cuda-keyring_1.1-1_all.deb && \
+            rm -rf cuda-keyring_1.1-1_all.deb && \
+    apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
     groupadd --gid ${GID} ${USER} && \
@@ -167,11 +178,10 @@ RUN set -eux; \
 FROM base AS builder
 USER root
 # Copy the fix-permissions script and set its execution permission
-COPY fix-permissions /usr/local/bin/fix-permissions
-RUN chmod +x /usr/local/bin/fix-permissions
+COPY --chmod=775 fix-permissions /usr/local/bin/fix-permissions
 
 # Copy components from parallel stages
-COPY --from=mecab /opt/mecab /opt/mecab
+COPY --link --from=mecab /opt/mecab /opt/mecab
 
 # Additional Python and project environment configuration
 USER ${UID}
@@ -190,10 +200,11 @@ RUN uv add \
          konlpy dart-fss opendartreader finance-datareader \
          elasticsearch elasticsearch-dsl \
          "nvidia-cudnn-cu12>=9.5.0.50" \
-         ipykernel \
+         ipykernel mobilechelonian selenium nbconvert[webpdf] \
          jupyterlab jupyterlab_rise thefuzz ipympl \
          jupyterlab-latex jupyterlab-katex ipydatagrid \
-         jupyterlab-language-pack-ko-KR sas_kernel && \
+         jupyterlab-language-pack-ko-KR sas_kernel \
+         https://github.com/AISFlow/nbconvert.git && \
     mkdir -p /home/code/.config/matplotlib/ && \
     { \
          echo "# Default font family"; \
@@ -221,6 +232,7 @@ RUN uv add \
 
 # Install VS Code extensions
 RUN code-server --install-extension ms-python.python && \
+    code-server --install-extension ms-python.pylint && \
     code-server --install-extension ms-toolsai.jupyter
 
 # ─────────────────────────────
@@ -231,7 +243,7 @@ ENV NODE_ENV=production
 # Copy files from the builder stage
 COPY --link --from=builder /opt/mecab /opt/mecab
 COPY --link --from=builder /home/code /home/code
-COPY --link --from=builder /usr/local/bin/fix-permissions /usr/local/bin/fix-permissions
+COPY --link --from=builder --chmod=775 /usr/local/bin/fix-permissions /usr/local/bin/fix-permissions
 COPY --link --from=fonts /usr/share/fonts /usr/share/fonts
 
 # Expose the Code‑Server port and define a volume for persistent data
