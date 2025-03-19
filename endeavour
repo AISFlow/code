@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-# Define colors
+# Define colours
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 NC='\033[0m'
@@ -10,15 +10,46 @@ setup_user() {
     UID="${UID:-1001}"
     GID="${GID:-1001}"
     UNAME="${USERNAME:-code}"
+
+    # Check if a group exists for the given GID
+    group=$(getent group "${GID}" | cut -d: -f1)
+    if [ -n "${group}" ]; then
+        if [ "${group}" != "${UNAME}" ]; then
+            # Rename existing group to the desired username
+            groupmod -n "${UNAME}" "${group}"
+        else
+            echo -e "${YELLOW}Group '${UNAME}' already exists. Skipping group creation.${NC}"
+        fi
+    else
+        groupadd -g "${GID}" "${UNAME}"
+    fi
+
+    # Check if a user exists for the given UID
+    user=$(getent passwd "${UID}" | cut -d: -f1)
+    if [ -n "${user}" ]; then
+        if [ "${user}" != "${UNAME}" ]; then
+            # Rename existing user to the desired username and update home directory
+            usermod -l "${UNAME}" "${user}"
+            usermod -d "/home/${UNAME}" "${UNAME}"
+            if [ -d "/home/${user}" ]; then
+                mv "/home/${user}" "/home/${UNAME}" || { echo "Failed to rename home directory"; exit 1; }
+            else
+                echo "Home directory for ${user} does not exist"
+            fi
+        fi
+    else
+        useradd -u "${UID}" -g "${GID}" -m "${UNAME}"
+    fi
+
     # Set ownership of the home directory
     echo -e "${GREEN}Setting ownership of home directory for ${UNAME}...${NC}"
-    chown -r "${UID}:${GID}" "/home/${UNAME}"
+    mkdir -p "/home/${UNAME}"
+    chown "${UID}:${GID}" "/home/${UNAME}"
     echo -e "${GREEN}Ownership set successfully for ${UNAME}!${NC}"
 }
 
 if [ "$(id -u)" -eq 0 ]; then
     setup_user  # Call the setup_user function
-    fc-cache -f -v
     exec gosu "${UNAME}" code-server --bind-addr 0.0.0.0:8080 .
 else
     exec "$@"  # If not root, execute the command directly
