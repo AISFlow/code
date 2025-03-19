@@ -50,7 +50,7 @@ setup_user() {
 
 if [ "$(id -u)" -eq 0 ]; then
     setup_user  # Call the setup_user function
-    exec gosu "${UNAME}" code-server --bind-addr 0.0.0.0:8080 .
+    exec gosu "${UNAME}" /home/${UNAME}/code-server --bind-addr 0.0.0.0:8080 .
 else
     exec "$@"  # If not root, execute the command directly
 fi
