@@ -59,17 +59,12 @@ RUN npm install -g pnpm@latest-10 \
     && npm cache clean --force
 
 ENV PNPM_HOME="~/.pnpm/store"
-ENV DOTNET_ROOT=$HOME/.dotnet
-ENV PATH="$DOTNET_ROOT:$DOTNET_ROOT/tools:$PNPM_HOME:/home/${USER}/.local/bin:$PATH"
+ENV PATH="$PNPM_HOME:/home/${USER}/.local/bin:$PATH"
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
     uv python install 3.12.9 --default --preview && \
     uv tool update-shell && \
     curl -fsSL https://code-server.dev/install.sh | sh && \
-    rm -rf /home/${USER}/.cache/code-server && \
-    wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh && \
-    chmod +x dotnet-install.sh && \
-    ./dotnet-install.sh --channel 9.0 --install-dir /home/${USER}/.dotnet && \
-    rm dotnet-install.sh
+    rm -rf /home/${USER}/.cache/code-server
 
 # ─────────────────────────────
 # Stage: Fonts Setup
@@ -216,7 +211,7 @@ RUN uv add \
 
 # Install VS Code extensions with retry logic
 RUN set -eux; \
-    EXTENSIONS="ms-python.python ms-python.pylint ms-toolsai.jupyter esbenp.prettier-vscode tomoki1207.pdf 	mechatroner.rainbow-csv ms-toolsai.tensorboard ms-dotnettools.dotnet-interactive-vscode"; \
+    EXTENSIONS="ms-python.python ms-python.pylint ms-toolsai.jupyter esbenp.prettier-vscode tomoki1207.pdf 	mechatroner.rainbow-csv"; \
     for EXT in $EXTENSIONS; do \
       echo "Installing ${EXT}..."; \
       for i in $(seq 1 5); do \
