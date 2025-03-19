@@ -192,7 +192,5 @@ RUN set -eux; \
         apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false
 
 COPY endeavour /usr/bin/endeavour
-
-EXPOSE 8080
-VOLUME [ "/home/code/" ]
-CMD ["endeavour"]
+ENTRYPOINT [ "tini", "--", "/opt/nvidia/nvidia_entrypoint.sh" ]
+CMD [ "endeavour" ]
