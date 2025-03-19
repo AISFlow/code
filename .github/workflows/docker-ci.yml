@@ -1,0 +1,216 @@
+name: Docker CI
+
+on:
+  push:
+    paths:
+      - 'Dockerfile'
+  workflow_dispatch:
+
+env:
+  REGISTRY_GHCR: ghcr.io
+  REGISTRY_DOCKER: docker.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  set-up:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    outputs:
+      tags: ${{ steps.meta.outputs.tags }}
+      labels: ${{ steps.meta.outputs.labels }}
+      lower_case_image_name: ${{ steps.lower.outputs.lower_case_image_name }}
+    steps:
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ env.REGISTRY_GHCR }}/${{ env.IMAGE_NAME }}
+            ${{ env.REGISTRY_DOCKER }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value={{date 'YYYYMMDD-HHmmss' tz='Asia/Seoul'}}
+          labels: |
+            maintainer=aisflow@askfront.com
+          flavor: |
+            latest=true
+
+      - name: Convert IMAGE_NAME to lowercase
+        id: lower
+        run: |
+          # Convert the IMAGE_NAME to lowercase using British English conventions
+          LOWER_CASE_IMAGE_NAME=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
+          echo "lower_case_image_name=${LOWER_CASE_IMAGE_NAME}" >> $GITHUB_OUTPUT
+
+  build-amd64:
+    needs: [set-up]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - name: Maximise build space
+        run: |
+          # Remove unnecessary directories to maximise build space
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_VERSION }}
+
+      - name: Set Clean Version
+        run: |
+          # Set a clean version from the RELEASE_VERSION environment variable
+          CLEAN_VERSION="${{ env.RELEASE_VERSION }}"
+          echo "VERSION=${CLEAN_VERSION}" >> $GITHUB_ENV
+
+      - name: Log into GitHub Container Registry (GHCR)
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY_GHCR }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log into Docker Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY_DOCKER }}
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Build and push (amd64)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.REGISTRY_GHCR }}/${{ needs.set-up.outputs.lower_case_image_name }}:amd64
+            ${{ env.REGISTRY_DOCKER }}/${{ needs.set-up.outputs.lower_case_image_name }}:amd64
+          labels: ${{ needs.set-up.outputs.labels }}
+          platforms: linux/amd64
+
+  build-arm64:
+    needs: [set-up]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Maximise build space
+        run: |
+          # Remove unnecessary directories to maximise build space
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_VERSION }}
+
+      - name: Set Clean Version
+        run: |
+          # Set a clean version from the RELEASE_VERSION environment variable
+          CLEAN_VERSION="${{ env.RELEASE_VERSION }}"
+          echo "VERSION=${CLEAN_VERSION}" >> $GITHUB_ENV
+
+      - name: Log into GitHub Container Registry (GHCR)
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY_GHCR }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log into Docker Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY_DOCKER }}
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Build and push (arm64)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.REGISTRY_GHCR }}/${{ needs.set-up.outputs.lower_case_image_name }}:arm64
+            ${{ env.REGISTRY_DOCKER }}/${{ needs.set-up.outputs.lower_case_image_name }}:arm64
+          labels: ${{ needs.set-up.outputs.labels }}
+          platforms: linux/arm64
+
+  manifest:
+    needs: [set-up, build-amd64, build-arm64]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - name: Maximise build space
+        run: |
+          # Remove unnecessary directories to maximise build space
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log into GitHub Container Registry (GHCR)
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY_GHCR }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log into Docker Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY_DOCKER }}
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Create and push Docker manifest
+        uses: int128/docker-manifest-create-action@v2
+        with:
+          index-annotations: |
+            ${{ needs.set-up.outputs.labels }}
+          tags: |
+            ${{ needs.set-up.outputs.tags }}
+          sources: |
+            ${{ env.REGISTRY_GHCR }}/${{ needs.set-up.outputs.lower_case_image_name }}:amd64
+            ${{ env.REGISTRY_GHCR }}/${{ needs.set-up.outputs.lower_case_image_name }}:arm64
