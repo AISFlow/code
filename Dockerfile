@@ -147,8 +147,9 @@ ENV NODE_ENV=production
 COPY --link --from=builder /home/code /home/code
 COPY --link --from=builder --chmod=775 /usr/local/bin/fix-permissions /usr/local/bin/fix-permissions
 COPY --link --from=aisflow/dockerised-mecab-ko:0.1.0 /opt/mecab /opt/mecab
-COPY --link --from=aisflow/dockerised-fonts:0.1.0 /usr/share/fonts/truetype/ /usr/share/fonts/truetype/
-COPY --link --from=aisflow/dockerised-fonts:0.1.0 /usr/share/fonts/polybag/ /usr/share/fonts/polybag/
+COPY --link --from=aisflow/dockerised-fonts:20250319-235039 /usr/share/fonts/truetype/ /usr/share/fonts/truetype/
+COPY --link --from=aisflow/dockerised-fonts:20250319-235039 /usr/share/fonts/polybag/ /usr/share/fonts/polybag/
+COPY --link endeavour /usr/bin/endeavour
 
 USER root
 
@@ -191,6 +192,5 @@ RUN set -eux; \
         [ -z "$savedAptMark" ] || apt-mark manual $savedAptMark; \
         apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false
 
-COPY endeavour /usr/bin/endeavour
 ENTRYPOINT [ "tini", "--", "/opt/nvidia/nvidia_entrypoint.sh" ]
 CMD [ "endeavour" ]
