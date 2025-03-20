@@ -49,7 +49,7 @@ jobs:
               echo "No local version available. Proceeding with the first release..."
               git tag ${RELEASE_VER}
               git push origin ${RELEASE_VER}
-              gh workflow run web_ci.yaml --ref ${RELEASE_VER}
+              gh workflow run docker-ci.yml --ref ${RELEASE_VER}
               exit 0
           fi
 
@@ -61,7 +61,7 @@ jobs:
                   git tag ${RELEASE_VER}
                   git push origin ${RELEASE_VER}
               fi
-              gh workflow run web_ci.yaml --ref ${RELEASE_VER}
+              gh workflow run docker-ci.yml --ref ${RELEASE_VER}
           else
               echo "No updates available..."
           fi
