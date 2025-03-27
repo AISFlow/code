@@ -282,5 +282,6 @@ RUN set -eux; \
         [ -z "$savedAptMark" ] || apt-mark manual $savedAptMark; \
         apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false
 
+EXPOSE 8080
 ENTRYPOINT [ "tini", "--", "/opt/nvidia/nvidia_entrypoint.sh" ]
 CMD [ "endeavour" ]
