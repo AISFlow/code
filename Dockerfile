@@ -25,7 +25,7 @@ RUN rm -rf /etc/apt/sources.list.d/cuda.list && \
         locales dumb-init procps pandoc \
         git git-lfs htop lsb-release \
         zip unzip openssh-client sudo nano \
-        vim zsh jq python-is-python3 texlive-full \
+        vim zsh jq python-is-python3 \
         texlive-xetex texlive-fonts-recommended \
         ko.tex fonts-noto-cjk texlive-lang-korean \
         texlive-lang-chinese texlive-lang-japanese && \
