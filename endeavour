@@ -50,6 +50,8 @@ setup_user() {
     echo -e "${GREEN}Setting ownership of home directory for $uname...${NC}"
     mkdir -p "/home/$uname"
     # fix-permissions "/home/$uname"
+    chown -R $uname:$uname /home/$uname/.config/
+    chown -R $uname:$uname /home/$uname/project/
     echo -e "${GREEN}Ownership set successfully for $uname!${NC}"
 }
 
