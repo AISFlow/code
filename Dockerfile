@@ -211,7 +211,7 @@ RUN uv add \
 
 # Install VS Code extensions with retry logic
 RUN set -eux; \
-    EXTENSIONS="ms-python.python ms-python.pylint ms-toolsai.jupyter esbenp.prettier-vscode anwar.papyrus-pdf mechatroner.rainbow-csv"; \
+    EXTENSIONS="ms-python.python ms-python.pylint ms-toolsai.jupyter esbenp.prettier-vscode anwar.papyrus-pdf mechatroner.rainbow-csv cweijan.vscode-office"; \
     for EXT in $EXTENSIONS; do \
       echo "Installing ${EXT}..."; \
       for i in $(seq 1 5); do \
