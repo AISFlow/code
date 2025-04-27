@@ -2,12 +2,12 @@ name: Check for updates
 
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: '*/5 * * * *'
   workflow_dispatch:
-  
+
 env:
   GH_TOKEN: ${{ github.token }}
-  
+
 jobs:
   publish:
     runs-on: ubuntu-latest
