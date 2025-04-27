@@ -29,6 +29,7 @@ RUN set -eux; \
         vim zsh jq python-is-python3 \
         texlive-xetex texlive-fonts-recommended \
         ko.tex fonts-noto-cjk texlive-lang-korean \
+        screen tree \
         texlive-lang-chinese texlive-lang-japanese; \
     \
     ARCH="$(dpkg --print-architecture)"; \
