@@ -15,34 +15,41 @@ ENV TZ="Asia/Seoul" \
     GID=1001
 
 # Install essential commands and tools, and create group and user
-RUN rm -rf /etc/apt/sources.list.d/cuda.list && \
-    apt-get update -yq && \
+RUN set -eux; \
+    rm -rf /etc/apt/sources.list.d/cuda.list; \
+    apt-get update -yq; \
     apt-get install -yq --no-install-recommends \
         build-essential g++ pkg-config wget curl \
         unzip tar ffmpeg fonts-dejavu fontconfig \
         libpq-dev libx11-dev libxkbfile-dev \
-        libsecret-1-dev libkrb5-dev \
-        locales dumb-init procps pandoc \
+        libsecret-1-dev libkrb5-dev locales \
+        clang build-essential dumb-init procps pandoc \
         git git-lfs htop lsb-release \
         zip unzip openssh-client sudo nano \
         vim zsh jq python-is-python3 \
         texlive-xetex texlive-fonts-recommended \
         ko.tex fonts-noto-cjk texlive-lang-korean \
-        texlive-lang-chinese texlive-lang-japanese && \
-    echo "ko_KR.UTF-8 UTF-8" >> /etc/locale.gen && \
-    locale-gen && \
-    curl https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb \
-    --output cuda-keyring_1.1-1_all.deb && \
-        apt-key del A4B469963BF863CC && \
-            dpkg -i cuda-keyring_1.1-1_all.deb && \
-            rm -rf cuda-keyring_1.1-1_all.deb && \
-    apt-get update && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
-    groupadd --gid ${GID} ${USER} && \
-    useradd --uid ${UID} --gid ${GID} --create-home --shell /bin/bash ${USER} && \
-    echo "code ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/nopasswd && \
-    sed -i "s/# ko_KR.UTF-8/ko_KR.UTF-8/" /etc/locale.gen && \
+        texlive-lang-chinese texlive-lang-japanese; \
+    \
+    ARCH="$(dpkg --print-architecture)"; \
+    case "$ARCH" in \
+        amd64) CUDA_URL="https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb" ;; \
+        arm64) CUDA_URL="https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/arm64/cuda-keyring_1.1-1_all.deb" ;; \
+        *) echo "Unsupported architecture: $ARCH" && exit 1 ;; \
+    esac; \
+    curl -fsSL "$CUDA_URL" -o cuda-keyring.deb; \
+    dpkg -i cuda-keyring.deb; \
+    rm -f cuda-keyring.deb; \
+    \
+    apt-get update; \
+    apt-get clean; \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*; \
+    \
+    # Create user and locale settings
+    groupadd --gid ${GID} ${USER}; \
+    useradd --uid ${UID} --gid ${GID} --create-home --shell /bin/bash ${USER}; \
+    echo "code ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/nopasswd; \
+    sed -i "s/# ko_KR.UTF-8/ko_KR.UTF-8/" /etc/locale.gen; \
     locale-gen
 
 # Switch to the non-root user and set the working directory
