@@ -1,7 +1,7 @@
 # ─────────────────────────────
 # Stage: Base Image with Essential Tools
 # ─────────────────────────────
-FROM nvidia/cuda:12.8.1-cudnn-runtime-ubuntu24.04 AS base
+FROM nvidia/cuda:12.9.0-cudnn-runtime-ubuntu24.04 AS base
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
