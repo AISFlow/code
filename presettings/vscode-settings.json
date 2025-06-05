@@ -1,4 +1,7 @@
 {
   "workbench.colorTheme": "Visual Studio Dark",
-  "python.defaultInterpreterPath": "/home/code/.local/bin/python"
+  "python.defaultInterpreterPath": "/home/code/.local/bin/python",
+  "editor.fontFamily": "'D2Coding', 'IBM Plex Mono', 'Noto Sans Mono', 'DejaVu Sans Mono', 'Liberation Mono', 'Source Code Pro', 'Pretendard', 'monospace'",
+  "editor.fontLigatures": true,
+  "terminal.integrated.fontFamily": "'D2Coding', 'IBM Plex Mono', 'Noto Sans Mono', 'DejaVu Sans Mono', 'Liberation Mono', 'Ubuntu Mono', 'monospace'"
 }
