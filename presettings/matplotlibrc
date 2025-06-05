@@ -1,8 +1,8 @@
 # Default font family
-font.family: "Pretendard"
+font.family: "Noto Sans KR"
 
 # Sans-serif fonts
-font.sans-serif: "Pretendard Variable", Pretendard, "Pretendard JP Variable", "Pretendard JP", "Noto Sans KR", "Noto Sans JP", "IBM Plex Sans KR", "IBM Plex Sans", "DejaVu Sans", "Liberation Sans", "Nimbus Sans", "Ubuntu"
+font.sans-serif: "Noto Color Emoji", "Noto Emoji", "Noto Sans KR", "Noto Sans JP", "Pretendard Variable", Pretendard, "Pretendard JP Variable", "Pretendard JP", "IBM Plex Sans KR", "IBM Plex Sans", "DejaVu Sans", "Liberation Sans", "Nimbus Sans", "Ubuntu"
 
 # Serif fonts
 font.serif: "Noto Serif KR", "Noto Serif JP", "IBM Plex Serif", "STIXGeneral", "Liberation Serif", "DejaVu Serif", "Nimbus Roman"
