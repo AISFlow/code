@@ -89,69 +89,7 @@ RUN curl -fsSL https://code-server.dev/install.sh | sh && \
     rm -rf ~/.cache/code-server
 
 # ─────────────────────────────
-# Stage 2: Fonts (root)
-# ─────────────────────────────
-FROM base AS fonts
-USER root
-ARG D2CODING_VERSION=1.3.2
-ARG D2CODING_DATE=20180524
-ARG D2CODING_NERD_VERSION=1.3.2
-ARG PRETENDARD_VERSION=1.3.9
-
-RUN set -eux; \
-    install_google_font() { \
-      local relative_path="$1"; local font_name="$2"; \
-      local font_dir="/usr/share/fonts/truetype/${relative_path}"; \
-      mkdir -p "${font_dir}" && \
-      local encoded_font_name=$(printf "%s" "${font_name}" | jq -sRr @uri); \
-      wget --quiet -O "${font_dir}/${font_name}" "https://raw.githubusercontent.com/google/fonts/17216f1645a133dbbeaa506f0f63f701861b6c7b/ofl/${relative_path}/${encoded_font_name}"; \
-    }; \
-    \
-    mkdir -p /usr/share/fonts/truetype/D2Coding && \
-      wget --quiet -O /usr/share/fonts/truetype/D2Coding.zip "https://github.com/naver/d2codingfont/releases/download/VER${D2CODING_VERSION}/D2Coding-Ver${D2CODING_VERSION}-${D2CODING_DATE}.zip" && \
-      unzip /usr/share/fonts/truetype/D2Coding.zip -d /usr/share/fonts/truetype/ && \
-      rm /usr/share/fonts/truetype/D2Coding.zip; \
-    mkdir -p /usr/share/fonts/truetype/D2CodingNerd && \
-      wget --quiet -O /usr/share/fonts/truetype/D2CodingNerd/D2CodingNerd.ttf "https://github.com/kelvinks/D2Coding_Nerd/raw/master/D2Coding%20v.${D2CODING_NERD_VERSION}%20Nerd%20Font%20Complete.ttf"; \
-    mkdir -p /usr/share/fonts/truetype/Pretendard && \
-      wget --quiet -O /usr/share/fonts/truetype/Pretendard.zip "https://github.com/orioncactus/pretendard/releases/download/v${PRETENDARD_VERSION}/Pretendard-${PRETENDARD_VERSION}.zip" && \
-      unzip /usr/share/fonts/truetype/Pretendard.zip -d /usr/share/fonts/truetype/Pretendard/ && \
-      rm /usr/share/fonts/truetype/Pretendard.zip; \
-    mkdir -p /usr/share/fonts/truetype/PretendardJP && \
-      wget --quiet -O /usr/share/fonts/truetype/PretendardJP.zip "https://github.com/orioncactus/pretendard/releases/download/v${PRETENDARD_VERSION}/PretendardJP-${PRETENDARD_VERSION}.zip" && \
-      unzip /usr/share/fonts/truetype/PretendardJP.zip -d /usr/share/fonts/truetype/PretendardJP/ && \
-      rm /usr/share/fonts/truetype/PretendardJP.zip; \
-    \
-    install_google_font "notosans" "NotoSans[wdth,wght].ttf"; \
-    install_google_font "notosans" "NotoSans-Italic[wdth,wght].ttf"; \
-    install_google_font "notoserif" "NotoSerif[wdth,wght].ttf"; \
-    install_google_font "notoserif" "NotoSerif-Italic[wdth,wght].ttf"; \
-    install_google_font "notosanskr" "NotoSansKR[wght].ttf"; \
-    install_google_font "notoserifkr" "NotoSerifKR[wght].ttf"; \
-    install_google_font "notosansjp" "NotoSansJP[wght].ttf"; \
-    install_google_font "notoserifjp" "NotoSerifJP[wght].ttf"; \
-    \
-    install_google_font "nanumbrushscript" "NanumBrushScript-Regular.ttf"; \
-    install_google_font "nanumgothic" "NanumGothic-Bold.ttf"; \
-    install_google_font "nanumgothic" "NanumGothic-ExtraBold.ttf"; \
-    install_google_font "nanumgothic" "NanumGothic-Regular.ttf"; \
-    install_google_font "nanumgothiccoding" "NanumGothicCoding-Bold.ttf"; \
-    install_google_font "nanumgothiccoding" "NanumGothicCoding-Regular.ttf"; \
-    install_google_font "nanummyeongjo" "NanumMyeongjo-Bold.ttf"; \
-    install_google_font "nanummyeongjo" "NanumMyeongjo-ExtraBold.ttf"; \
-    install_google_font "nanummyeongjo" "NanumMyeongjo-Regular.ttf"; \
-    \
-    install_google_font "ibmplexmono" "IBMPlexMono-Bold.ttf"; \
-    install_google_font "ibmplexmono" "IBMPlexMono-Regular.ttf"; \
-    install_google_font "ibmplexsanskr" "IBMPlexSansKR-Bold.ttf"; \
-    install_google_font "ibmplexsanskr" "IBMPlexSansKR-Regular.ttf"; \
-    \
-    chmod -R 644 /usr/share/fonts/truetype/* && \
-    find /usr/share/fonts/truetype/ -type d -exec chmod 755 {} + && \
-    fc-cache -f -v
-
-# ─────────────────────────────
-# Stage 3: Builder
+# Stage 2: Builder
 # ─────────────────────────────
 FROM base AS builder
 USER root
@@ -201,7 +139,7 @@ RUN rm -rf /home/code/.cache
 RUN echo 'if [ -f "/home/code/.venv/bin/activate" ]; then source "/home/code/.venv/bin/activate"; fi' >> /home/code/.bash_env
 
 # ─────────────────────────────
-# Stage 4: Runtime
+# Stage 3: Runtime
 # ─────────────────────────────
 FROM base AS runtime
 
@@ -209,8 +147,8 @@ ENV NODE_ENV=production
 
 COPY --link --chown=1001:1001 --from=builder /home/code /home/code
 COPY --link --chown=1001:1001 --from=builder --chmod=775 /usr/local/bin/fix-permissions /usr/local/bin/fix-permissions
-COPY --link --from=aisflow/dockerised-mecab-ko:0.1.0 /opt/mecab /opt/mecab
-COPY --link --from=fonts /usr/share/fonts /usr/share/fonts
+COPY --link --from=ghcr.io/aisflow/dockerised-mecab-ko:20250319-190826 /opt/mecab /opt/mecab
+COPY --link --from=ghcr.io/aisflow/dockerised-fonts:20250319-235039 /usr/share/fonts /usr/share/fonts
 COPY --link --chown=1001:1001 endeavour /usr/bin/endeavour
 
 USER root
