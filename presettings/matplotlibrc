@@ -1,0 +1,17 @@
+# Default font family
+font.family: "Pretendard"
+
+# Sans-serif fonts
+font.sans-serif: "Pretendard Variable", Pretendard, "Pretendard JP Variable", "Pretendard JP", "Noto Sans KR", "Noto Sans JP", "IBM Plex Sans KR", "IBM Plex Sans", "DejaVu Sans", "Liberation Sans", "Nimbus Sans", "Ubuntu"
+
+# Serif fonts
+font.serif: "Noto Serif KR", "Noto Serif JP", "IBM Plex Serif", "STIXGeneral", "Liberation Serif", "DejaVu Serif", "Nimbus Roman"
+
+# Monospace fonts
+font.monospace: "D2Coding", "Noto Sans Mono", "IBM Plex Mono", "Noto Sans JP", "DejaVu Sans Mono", "Liberation Mono", "Source Code Pro", "Ubuntu Mono"
+
+# Cursive fonts
+font.cursive: "Nanum Brush Script", "Noto Serif KR", "Noto Serif JP", "IBM Plex Serif", "Liberation Serif", "Nimbus Roman", cursive
+
+# Fantasy fonts
+font.fantasy: "Noto Sans KR", "Noto Sans JP", "IBM Plex Sans", "Nimbus Sans", fantasy
