@@ -104,21 +104,26 @@ RUN set -eux; \
       local font_dir="/usr/share/fonts/truetype/${relative_path}"; \
       mkdir -p "${font_dir}" && \
       local encoded_font_name=$(printf "%s" "${font_name}" | jq -sRr @uri); \
-      wget --quiet -O "${font_dir}/${font_name}" "https://raw.githubusercontent.com/google/fonts/17216f1645a133dbbeaa506f0f63f701861b6c7b/ofl/${relative_path}/${encoded_font_name}"; \
+      wget --quiet -O "${font_dir}/${font_name}" \
+          "https://raw.githubusercontent.com/google/fonts/17216f1645a133dbbeaa506f0f63f701861b6c7b/ofl/${relative_path}/${encoded_font_name}"; \
     }; \
     \
     mkdir -p /usr/share/fonts/truetype/D2Coding && \
-      wget --quiet -O /usr/share/fonts/truetype/D2Coding.zip "https://github.com/naver/d2codingfont/releases/download/VER${D2CODING_VERSION}/D2Coding-Ver${D2CODING_VERSION}-${D2CODING_DATE}.zip" && \
+      wget --quiet -O /usr/share/fonts/truetype/D2Coding.zip \
+        "https://github.com/naver/d2codingfont/releases/download/VER${D2CODING_VERSION}/D2Coding-Ver${D2CODING_VERSION}-${D2CODING_DATE}.zip" && \
       unzip /usr/share/fonts/truetype/D2Coding.zip -d /usr/share/fonts/truetype/ && \
       rm /usr/share/fonts/truetype/D2Coding.zip; \
     mkdir -p /usr/share/fonts/truetype/D2CodingNerd && \
-      wget --quiet -O /usr/share/fonts/truetype/D2CodingNerd/D2CodingNerd.ttf "https://github.com/kelvinks/D2Coding_Nerd/raw/master/D2Coding%20v.${D2CODING_NERD_VERSION}%20Nerd%20Font%20Complete.ttf"; \
+      wget --quiet -O /usr/share/fonts/truetype/D2CodingNerd/D2CodingNerd.ttf \
+        "https://github.com/kelvinks/D2Coding_Nerd/raw/master/D2Coding%20v.${D2CODING_NERD_VERSION}%20Nerd%20Font%20Complete.ttf"; \
     mkdir -p /usr/share/fonts/truetype/Pretendard && \
-      wget --quiet -O /usr/share/fonts/truetype/Pretendard.zip "https://github.com/orioncactus/pretendard/releases/download/v${PRETENDARD_VERSION}/Pretendard-${PRETENDARD_VERSION}.zip" && \
+      wget --quiet -O /usr/share/fonts/truetype/Pretendard.zip \
+        "https://github.com/orioncactus/pretendard/releases/download/v${PRETENDARD_VERSION}/Pretendard-${PRETENDARD_VERSION}.zip" && \
       unzip /usr/share/fonts/truetype/Pretendard.zip -d /usr/share/fonts/truetype/Pretendard/ && \
       rm /usr/share/fonts/truetype/Pretendard.zip; \
     mkdir -p /usr/share/fonts/truetype/PretendardJP && \
-      wget --quiet -O /usr/share/fonts/truetype/PretendardJP.zip "https://github.com/orioncactus/pretendard/releases/download/v${PRETENDARD_VERSION}/PretendardJP-${PRETENDARD_VERSION}.zip" && \
+      wget --quiet -O /usr/share/fonts/truetype/PretendardJP.zip \
+        "https://github.com/orioncactus/pretendard/releases/download/v${PRETENDARD_VERSION}/PretendardJP-${PRETENDARD_VERSION}.zip" && \
       unzip /usr/share/fonts/truetype/PretendardJP.zip -d /usr/share/fonts/truetype/PretendardJP/ && \
       rm /usr/share/fonts/truetype/PretendardJP.zip; \
     \
