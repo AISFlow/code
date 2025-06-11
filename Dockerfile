@@ -169,12 +169,12 @@ RUN uv init --python 3.12.9 --bare && \
     uv venv --python 3.12.9 --seed
 
 RUN uv add \
-      grpcio-status grpcio pandas>=2.2.3 pyarrow \
+      grpcio-status grpcio pandas>=2.2.3 numpy pyarrow \
       transformers datasets tokenizers nltk jax jaxlib optax \
       pandas-datareader psycopg2 pymysql pymongo sqlalchemy \
       sentencepiece seqeval wordcloud tweepy gradio \
       dash streamlit tensorflow seaborn torch \
-      line-profiler memory-profiler \
+      line-profiler memory-profiler yfinance \
       python-mecab-ko soynlp statsmodels networkx mplcairo \
       konlpy dart-fss opendartreader finance-datareader \
       elasticsearch elasticsearch-dsl \

@@ -1,63 +1,62 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+set -euo pipefail
 
-# Define colours for output messages
+# ─── Colours ───────────────────────────────────────────────
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 NC='\033[0m'
 
+# ─── Environment ──────────────────────────────────────────
+TARGET_UID="${UID:-1001}"
+TARGET_GID="${GID:-1001}"
+TARGET_UNAME="${USERNAME:-mluser}"
+HOME_DIR="/home/code"
+
+if [ "$TARGET_UNAME" = "root" ]; then
+    echo -e "${YELLOW}Running as root – skipping user setup.${NC}"
+    exec "$@"
+fi
+
 setup_user() {
-    # Set default UID, GID and username if not provided
-    local uid="${UID:-1001}"
-    local gid="${GID:-1001}"
-    local uname="${USERNAME:-code}"
+    echo "→ Setting up user '${TARGET_UNAME}' (UID:${TARGET_UID}, GID:${TARGET_GID}), home=${HOME_DIR}"
 
-    # Check if a group with the provided GID exists
-    local existing_group
-    existing_group=$(getent group "${gid}" | cut -d: -f1)
-
-    if [ -n "$existing_group" ]; then
-        if [ "$existing_group" != "$uname" ]; then
-            # Rename the existing group to the desired username
-            groupmod -n "$uname" "$existing_group"
-        else
-            echo -e "${YELLOW}Group '$uname' already exists. Skipping group creation.${NC}"
-        fi
+    # ─ group ─
+    if getent group "${TARGET_UNAME}" >/dev/null; then
+        current_gid=$(getent group "${TARGET_UNAME}" | cut -d: -f3)
+        [[ "${current_gid}" != "${TARGET_GID}" ]] && groupmod -g "${TARGET_GID}" "${TARGET_UNAME}"
+    elif getent group "${TARGET_GID}" >/dev/null; then
+        old=$(getent group "${TARGET_GID}" | cut -d: -f1)
+        groupmod -n "${TARGET_UNAME}" "${old}"
     else
-        groupadd -g "$gid" "$uname"
+        groupadd -g "${TARGET_GID}" "${TARGET_UNAME}"
     fi
 
-    # Check if a user with the provided UID exists
-    local existing_user
-    existing_user=$(getent passwd "${uid}" | cut -d: -f1)
-
-    if [ -n "$existing_user" ]; then
-        if [ "$existing_user" != "$uname" ]; then
-            # Rename the existing user and update the home directory
-            usermod -l "$uname" "$existing_user"
-            usermod -d "/home/$uname" "$uname"
-            if [ -d "/home/$existing_user" ]; then
-                mv "/home/$existing_user" "/home/$uname" || { echo "Failed to rename home directory"; exit 1; }
-            else
-                echo "Home directory for $existing_user does not exist"
-            fi
-        fi
+    # ─ user ─
+    if id -u "${TARGET_UNAME}" >/dev/null 2>&1; then
+        current_uid=$(id -u "${TARGET_UNAME}")
+        [[ "${current_uid}" != "${TARGET_UID}" ]] && usermod -u "${TARGET_UID}" "${TARGET_UNAME}"
+        usermod -g "${TARGET_GID}" "${TARGET_UNAME}"
+        usermod -d "${HOME_DIR}" -m "${TARGET_UNAME}"
+    elif getent passwd "${TARGET_UID}" >/dev/null; then
+        old=$(getent passwd "${TARGET_UID}" | cut -d: -f1)
+        usermod -l "${TARGET_UNAME}" "${old}"
+        usermod -d "${HOME_DIR}" -m "${TARGET_UNAME}"
+        usermod -g "${TARGET_GID}" "${TARGET_UNAME}"
     else
-        useradd -u "$uid" -g "$gid" -m "$uname"
+        useradd -u "${TARGET_UID}" -g "${TARGET_GID}" -d "${HOME_DIR}" -m -s /bin/bash "${TARGET_UNAME}"
     fi
 
-    # Ensure the home directory exists and set its ownership
-    echo -e "${GREEN}Setting ownership of home directory for $uname...${NC}"
-    mkdir -p "/home/$uname"
-    # fix-permissions "/home/$uname"
-    chown -R $uname:$uname /home/$uname/.config/
-    chown -R $uname:$uname /home/$uname/project/
-    echo -e "${GREEN}Ownership set successfully for $uname!${NC}"
+    # ─ chown home ─
+    echo -e "${GREEN}→ Chown -R ${TARGET_UNAME}:${TARGET_UNAME} ${HOME_DIR}${NC}"
+    mkdir -p "${HOME_DIR}"
+    chown -R "${TARGET_UID}:${TARGET_GID}" "${HOME_DIR}"
 }
 
 if [ "$(id -u)" -eq 0 ]; then
-    setup_user  # Execute the user and group setup
-    exec gosu "${USERNAME:-code}" code-server --bind-addr 0.0.0.0:8080 .
+    setup_user
+    echo "→ Switching to '${TARGET_UNAME}' and exec: $*"
+    exec gosu "${TARGET_UNAME}" code-server --bind-addr 0.0.0.0:8080 .
 else
-    exec "$@"  # If not running as root, execute the provided command directly
+    echo -e "${YELLOW}Not running as root → executing: $*${NC}"
+    exec "$@"
 fi
