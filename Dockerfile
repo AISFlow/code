@@ -218,33 +218,19 @@ FROM base AS runtime
 
 ENV NODE_ENV=production
 
-COPY --link --chown=${UID}:${GID} \
-    presettings/vscode-settings.json \
-    /home/${USER}/.local/share/code-server/User/settings.json
+COPY --link --chown=${UID}:${GID} presettings/vscode-settings.json /home/${USER}/.local/share/code-server/User/settings.json
 
-COPY --link --chown=${UID}:${GID} \
-    presettings/matplotlibrc \
-    /home/${USER}/.config/matplotlib/matplotlibrc
+COPY --link --chown=${UID}:${GID} presettings/matplotlibrc /home/${USER}/.config/matplotlib/matplotlibrc
 
-COPY --link --chown=${UID}:${GID} \
-    --from=builder /home/${USER}/ \
-    /home/${USER}/
+COPY --link --chown=${UID}:${GID} --from=builder /home/${USER}/ /home/${USER}/
 
-COPY --link --chown=${UID}:${GID} \
-    endeavour \
-    /usr/bin/endeavour
+COPY --link --chown=${UID}:${GID} endeavour /usr/bin/endeavour
 
-COPY --link --chmod=775 \
-    --from=builder /usr/local/bin/fix-permissions \
-    /usr/local/bin/fix-permissions
+COPY --link --chmod=775 --from=builder /usr/local/bin/fix-permissions /usr/local/bin/fix-permissions
 
-COPY --link --chmod=775 \
-    --from=ghcr.io/aisflow/dockerised-mecab-ko:20250319-190826 /opt/mecab/ \
-    /opt/mecab/
+COPY --link --chmod=775 --from=ghcr.io/aisflow/dockerised-mecab-ko:20250319-190826 /opt/mecab/ /opt/mecab/
 
-COPY --link --chmod=775 \
-    --from=fonts /usr/share/fonts/ \
-    /usr/share/fonts/
+COPY --link --chmod=775 --from=fonts /usr/share/fonts/ /usr/share/fonts/
 
 USER root
 

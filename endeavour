@@ -1,62 +1,57 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# ─── Colours ───────────────────────────────────────────────
-GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
-NC='\033[0m'
-
-# ─── Environment ──────────────────────────────────────────
 TARGET_UID="${UID:-1001}"
 TARGET_GID="${GID:-1001}"
-TARGET_UNAME="${USERNAME:-mluser}"
-HOME_DIR="/home/code"
+TARGET_UNAME="${USERNAME:-code}"
+HOME_DIR="/home/code" 
 
-if [ "$TARGET_UNAME" = "root" ]; then
-    echo -e "${YELLOW}Running as root – skipping user setup.${NC}"
-    exec "$@"
-fi
+log() {
+    local level="$1"
+    local message="$2"
+    local color
+    local level_prefix
 
-setup_user() {
-    echo "→ Setting up user '${TARGET_UNAME}' (UID:${TARGET_UID}, GID:${TARGET_GID}), home=${HOME_DIR}"
-
-    # ─ group ─
-    if getent group "${TARGET_UNAME}" >/dev/null; then
-        current_gid=$(getent group "${TARGET_UNAME}" | cut -d: -f3)
-        [[ "${current_gid}" != "${TARGET_GID}" ]] && groupmod -g "${TARGET_GID}" "${TARGET_UNAME}"
-    elif getent group "${TARGET_GID}" >/dev/null; then
-        old=$(getent group "${TARGET_GID}" | cut -d: -f1)
-        groupmod -n "${TARGET_UNAME}" "${old}"
-    else
-        groupadd -g "${TARGET_GID}" "${TARGET_UNAME}"
-    fi
-
-    # ─ user ─
-    if id -u "${TARGET_UNAME}" >/dev/null 2>&1; then
-        current_uid=$(id -u "${TARGET_UNAME}")
-        [[ "${current_uid}" != "${TARGET_UID}" ]] && usermod -u "${TARGET_UID}" "${TARGET_UNAME}"
-        usermod -g "${TARGET_GID}" "${TARGET_UNAME}"
-        usermod -d "${HOME_DIR}" -m "${TARGET_UNAME}"
-    elif getent passwd "${TARGET_UID}" >/dev/null; then
-        old=$(getent passwd "${TARGET_UID}" | cut -d: -f1)
-        usermod -l "${TARGET_UNAME}" "${old}"
-        usermod -d "${HOME_DIR}" -m "${TARGET_UNAME}"
-        usermod -g "${TARGET_GID}" "${TARGET_UNAME}"
-    else
-        useradd -u "${TARGET_UID}" -g "${TARGET_GID}" -d "${HOME_DIR}" -m -s /bin/bash "${TARGET_UNAME}"
-    fi
-
-    # ─ chown home ─
-    echo -e "${GREEN}→ Chown -R ${TARGET_UNAME}:${TARGET_UNAME} ${HOME_DIR}${NC}"
-    mkdir -p "${HOME_DIR}"
-    chown -R "${TARGET_UID}:${TARGET_GID}" "${HOME_DIR}"
+    case "$level" in
+        INFO)
+            color='\033[0;32m' # Green
+            level_prefix="INFO:    "
+            ;;
+        WARN)
+            color='\033[0;33m' # Yellow
+            level_prefix="WARNING: "
+            ;;
+        *)
+            color='\033[0m' # No Color
+            level_prefix="$level:"
+            ;;
+    esac
+    
+    local timestamp
+    timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    
+    echo -e "${color}${level_prefix}\033[0m ${timestamp} - [endeavour] - ${message}"
 }
 
-if [ "$(id -u)" -eq 0 ]; then
-    setup_user
-    echo "→ Switching to '${TARGET_UNAME}' and exec: $*"
-    exec gosu "${TARGET_UNAME}" code-server --bind-addr 0.0.0.0:8080 .
-else
-    echo -e "${YELLOW}Not running as root → executing: $*${NC}"
+if [ "$(id -u)" -ne 0 ]; then
+    log "WARN" "Not running as root. Skipping permission setup."
+    log "INFO" "Executing command as current user..."
     exec "$@"
 fi
+
+if [ "${TARGET_UNAME}" = "root" ]; then
+    log "WARN" "Running as root - skipping user setup."
+    exec "$@"
+fi
+
+log "INFO" "Setting user '${TARGET_UNAME}' to UID: ${TARGET_UID} and GID: ${TARGET_GID}"
+groupmod -o -g "${TARGET_GID}" "${TARGET_UNAME}"
+usermod -o -u "${TARGET_UID}" -g "${TARGET_GID}" "${TARGET_UNAME}"
+
+log "INFO" "Setting ownership for ${HOME_DIR}..."
+mkdir -p "${HOME_DIR}"
+usermod -d "${HOME_DIR}" "${TARGET_UNAME}"
+chown -R "${TARGET_UID}:${TARGET_GID}" "${HOME_DIR}"
+
+log "INFO" "Switching to user '${TARGET_UNAME}' and starting code-server..."
+exec gosu "${TARGET_UNAME}" code-server --bind-addr 0.0.0.0:8080 .
