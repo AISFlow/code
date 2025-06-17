@@ -1,7 +1,7 @@
 # ─────────────────────────────
 # Stage 1: Base
 # ─────────────────────────────
-FROM nvidia/cuda:12.9.0-cudnn-runtime-ubuntu24.04 AS base
+FROM nvidia/cuda:12.9.1-cudnn-runtime-ubuntu24.04 AS base
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
