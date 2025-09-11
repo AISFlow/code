@@ -70,7 +70,7 @@ ENV BASH_ENV="/home/${USER}/.bash_env"
 RUN touch "${BASH_ENV}" && echo '. "${BASH_ENV}"' >> ~/.bashrc
 
 RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.2/install.sh | PROFILE="${BASH_ENV}" bash && \
-    source ${BASH_ENV} && nvm install 20 && nvm use 20 && \
+    source ${BASH_ENV} && nvm install --lts && nvm use --lts && \
     npm install -g pnpm@latest-10 && npm cache clean --force
 
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
