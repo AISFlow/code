@@ -1,16 +1,17 @@
 services:
   code-server:
-    image: aisflow/code:latest
     container_name: code-server
+    image: aisflow/code:latest
     ports:
-      - '127.0.0.1:8080:8080'
+      - 127.0.0.1:8080:8080
     volumes:
-      - './config:/home/code/.config'
-      - './home:/home/code/project/home'
-    stdin_open: true
-    tty: true
+      - ./config:/home/code/.config
+      - ./home:/home/code/project/home
     deploy:
       resources:
         reservations:
           devices:
-            - capabilities: [gpu]
+            - capabilities:
+                - gpu
+    stdin_open: true
+    tty: true

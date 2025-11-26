@@ -48,10 +48,21 @@ log "INFO" "Setting user '${TARGET_UNAME}' to UID: ${TARGET_UID} and GID: ${TARG
 groupmod -o -g "${TARGET_GID}" "${TARGET_UNAME}"
 usermod -o -u "${TARGET_UID}" -g "${TARGET_GID}" "${TARGET_UNAME}"
 
-log "INFO" "Setting ownership for ${HOME_DIR}..."
+log "INFO" "Checking ownership for ${HOME_DIR}..."
 mkdir -p "${HOME_DIR}"
 usermod -d "${HOME_DIR}" "${TARGET_UNAME}"
-chown -R "${TARGET_UID}:${TARGET_GID}" "${HOME_DIR}"
+
+CURRENT_UID=$(stat -c "%u" "${HOME_DIR}")
+CURRENT_GID=$(stat -c "%g" "${HOME_DIR}")
+
+if [ "${CURRENT_UID}" != "${TARGET_UID}" ] || [ "${CURRENT_GID}" != "${TARGET_GID}" ]; then
+    log "WARN" "UID/GID mismatch detected (Current: ${CURRENT_UID}:${CURRENT_GID}, Target: ${TARGET_UID}:${TARGET_GID})."
+    log "INFO" "Running recursive chown on ${HOME_DIR}. This may take a while..."
+    chown -R "${TARGET_UID}:${TARGET_GID}" "${HOME_DIR}"
+    log "INFO" "Recursive chown completed."
+else
+    log "INFO" "UID/GID matches (Target: ${TARGET_UID}:${TARGET_GID}). Skipping recursive chown for fast startup."
+fi
 
 log "INFO" "Switching to user '${TARGET_UNAME}' and starting code-server..."
 exec gosu "${TARGET_UNAME}" code-server --bind-addr 0.0.0.0:8080 .
