@@ -209,7 +209,7 @@ COPY --link --chown=${UID}:${GID} --from=builder /home/${USER}/ /home/${USER}/
 COPY --link --chown=${UID}:${GID} presettings/vscode-settings.json /home/${USER}/.local/share/code-server/User/settings.json
 COPY --link --chown=${UID}:${GID} presettings/matplotlibrc /home/${USER}/.config/matplotlib/matplotlibrc
 
-COPY --link --chmod=755 --from=builder /usr/local/bin/fix-permissions /usr/local/bin/fix-permissions
+COPY --link --chmod=755 fix-permissions /usr/local/bin/fix-permissions
 COPY --link --chmod=755 endeavour /usr/bin/endeavour
 
 EXPOSE 8080
